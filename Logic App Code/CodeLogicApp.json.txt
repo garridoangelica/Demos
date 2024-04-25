@@ -1,0 +1,106 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "triggers": {
+      "When_a_HTTP_request_is_received": {
+        "type": "Request",
+        "kind": "Http",
+        "inputs": {
+          "schema": {
+            "fromLanguage": "en",
+            "toLanguage": "es"
+          }
+        }
+      }
+    },
+    "actions": {
+      "Get_Course_Description": {
+        "type": "ApiConnection",
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['excelonlinebusiness']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/drives/@{encodeURIComponent('b!AvyuKaLVUUOIbpTBf4xxNXJ1iFVgnplIj6XXE2b_lZ8Vrl7Bv5UVTL9dLQxtXRtV')}/files/@{encodeURIComponent(encodeURIComponent('Excel_2019_EN_LOC(frfr).xlsm'))}/tables/@{encodeURIComponent('PercipioMetadata')}/items/@{encodeURIComponent(encodeURIComponent('Course Description*'))}",
+          "queries": {
+            "source": "https://microsoft.sharepoint.com/teams/DemoAGSite",
+            "idColumn": "Percipio Metadata"
+          }
+        },
+        "runAfter": {}
+      },
+      "Call_Translator": {
+        "type": "Function",
+        "inputs": {
+          "method": "POST",
+          "queries": {
+            "fromLanguage": "@parameters('fromLanguage')",
+            "toLanguage": "@parameters('toLanguage')",
+            "textToTranslate": "@body('Get_Course_Description')?['Values']"
+          },
+          "function": {
+            "id": "/subscriptions/e01f377e-38aa-49d7-b94e-5a252c86deb7/resourceGroups/rg-demos/providers/Microsoft.Web/sites/demofunctionwindowsag/functions/callTranslatorJS"
+          }
+        },
+        "runAfter": {
+          "Get_Course_Description": [
+            "Succeeded"
+          ]
+        }
+      },
+      "Update_a_Course_Description": {
+        "type": "ApiConnection",
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['excelonlinebusiness']['connectionId']"
+            }
+          },
+          "method": "patch",
+          "body": {
+            "Values": "@{outputs('Call_Translator').body}"
+          },
+          "path": "/drives/@{encodeURIComponent('b!AvyuKaLVUUOIbpTBf4xxNXJ1iFVgnplIj6XXE2b_lZ8Vrl7Bv5UVTL9dLQxtXRtV')}/files/@{encodeURIComponent(encodeURIComponent('Excel_2019_EN_LOC(frfr).xlsm'))}/tables/@{encodeURIComponent('{121FFB52-FD7B-4B70-839B-3B8F429DAAFD}')}/items/@{encodeURIComponent(encodeURIComponent('Course Description*'))}",
+          "queries": {
+            "source": "https://microsoft.sharepoint.com/teams/DemoAGSite",
+            "idColumn": "Percipio Metadata"
+          }
+        },
+        "runAfter": {
+          "Call_Translator": [
+            "Succeeded"
+          ]
+        }
+      }
+    },
+    "outputs": {},
+    "parameters": {
+      "fromLanguage": {
+        "defaultValue": "en",
+        "type": "String"
+      },
+      "toLanguage": {
+        "defaultValue": "es",
+        "type": "String"
+      },
+      "$connections": {
+        "type": "Object",
+        "defaultValue": {}
+      }
+    }
+  },
+  "parameters": {
+    "$connections": {
+      "value": {
+        "excelonlinebusiness": {
+          "id": "/subscriptions/e01f377e-38aa-49d7-b94e-5a252c86deb7/providers/Microsoft.Web/locations/eastus/managedApis/excelonlinebusiness",
+          "connectionId": "/subscriptions/e01f377e-38aa-49d7-b94e-5a252c86deb7/resourceGroups/logicappdemoconsumption_group/providers/Microsoft.Web/connections/excelonlinebusiness",
+          "connectionName": "excelonlinebusiness"
+        }
+      }
+    }
+  }
+}
